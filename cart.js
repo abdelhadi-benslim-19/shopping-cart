@@ -109,3 +109,35 @@ const cartItems = [
   renderCartItems();
   calculateSubtotal();
   
+
+  const addToCartBtn = document.getElementById('add-to-cart-btn');
+  addToCartBtn.addEventListener('click', addToCart);
+
+  function addToCart(event) {
+    // Prevent the default form submission or button click behavior
+    event.preventDefault();
+  
+    // Extract the product details
+    const productId = event.target.dataset.productId;
+    const productName = event.target.dataset.productName;
+    const productPrice = event.target.dataset.productPrice;
+    // ... extract other relevant details
+  
+    // Create a new item object
+    const newItem = {
+      id: productId,
+      name: productName,
+      price: productPrice,
+      // ... add other relevant properties
+    };
+  
+    // Add the item to the cart
+    addItemToCart(newItem);
+  }
+  
+  function addItemToCart(item) {
+    cartItems.push(item);
+    renderCartItems();
+    calculateSubtotal();
+  }
+  
