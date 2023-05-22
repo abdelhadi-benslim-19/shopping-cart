@@ -1,161 +1,106 @@
-// Sample data for demonstration
-const cartItems = [
-  {
-    id: 1,
-    image: 'images/iphone_14_pro_max.jpg',
-    name: 'Product 1',
-    inStock: true,
-    color: 'Deep Purple',
-    quantity: 2,
-    price: 10
-  },
-  {
-    id: 2,
-    image: 'images/macbook_pro.jpg',
-    name: 'Product 2',
-    inStock: false,
-    color: 'Space Gray',
-    quantity: 1,
-    price: 15
-  }
-];
+// navbar functionality
+const navbarToggle = document.querySelector('.navbar-toggle');
+const navbarLinks = document.querySelector('.navbar-links');
 
-// Function to render cart items
-function renderCartItems() {
-  const cartItemsContainer = document.getElementById('cart-items');
-  cartItemsContainer.innerHTML = '';
+navbarToggle.addEventListener('click', () => {
+  navbarLinks.classList.toggle('active');
+});
+
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 768) {
+    navbarLinks.classList.remove('active');
+  }
+});
+
+// Retrieve the cart items from localStorage or initialize an empty array
+let cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+
+// Function to generate HTML for each cart item
+function generateCartItemHTML(item) {
+  return `
+    <div class="cart-item">
+      <div class="cart-item-image">
+        <img src="${item.image}" alt="${item.name}">
+      </div>
+      <div class="cart-item-details">
+        <h2 class="cart-item-name">${item.name}</h2>
+        <p class="cart-item-price">$${item.price.toFixed(2)}</p>
+        <p class="cart-item-quantity">Quantity: ${item.quantity}</p>
+      </div>
+    </div>
+  `;
+}
+
+
+// Function to display cart items on the cart page
+function displayCartItems() {
+  const cartItemsContainer = document.getElementById('cart-items-container');
+  cartItemsContainer.innerHTML = ''; // Clear the container
 
   cartItems.forEach(item => {
-    const cartItem = document.createElement('div');
-    cartItem.className = 'cart-item';
-
-    const itemImage = document.createElement('img');
-    itemImage.src = item.image;
-    cartItem.appendChild(itemImage);
-
-    const itemDetails = document.createElement('div');
-    itemDetails.className = 'item-details';
-
-    const itemName = document.createElement('h3');
-    itemName.textContent = item.name;
-    itemDetails.appendChild(itemName);
-
-    const itemStock = document.createElement('p');
-    itemStock.textContent = item.inStock ? 'In Stock' : 'Out of Stock';
-    itemDetails.appendChild(itemStock);
-
-    if (item.color) {
-      const itemColor = document.createElement('p');
-      itemColor.textContent = `Color: ${item.color}`;
-      itemDetails.appendChild(itemColor);
-    }
-
-    const itemQuantity = document.createElement('input');
-    itemQuantity.type = 'number';
-    itemQuantity.value = item.quantity;
-    itemQuantity.addEventListener('input', (event) => {
-      updateCartItemQuantity(item.id, event.target.value);
-    });
-    itemDetails.appendChild(itemQuantity);
-
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'delete-btn';
-    deleteBtn.textContent = 'Delete';
-    deleteBtn.addEventListener('click', () => {
-      removeCartItem(item.id);
-    });
-    itemDetails.appendChild(deleteBtn);
-
-    const itemPrice = document.createElement('p');
-    itemPrice.textContent = `Price: $${item.price}`;
-    itemDetails.appendChild(itemPrice);
-
-    cartItem.appendChild(itemDetails);
-
-    cartItemsContainer.appendChild(cartItem);
+    const itemHTML = generateCartItemHTML(item);
+    cartItemsContainer.insertAdjacentHTML('beforeend', itemHTML);
   });
 }
 
-// Function to calculate and display the subtotal
+// Function to calculate and display the subtotal price
 function calculateSubtotal() {
-  const subtotalContainer = document.getElementById('subtotal');
-  const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
-  const totalPrice = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
-
-  subtotalContainer.textContent = `Subtotal (${totalItems} item${totalItems !== 1 ? 's' : ''}): $${totalPrice}`;
+  const subtotalAmount = document.getElementById('subtotal-amount');
+  const subtotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  subtotalAmount.textContent = subtotal.toFixed(2);
 }
 
-// Function to remove a cart item
-function removeCartItem(itemId) {
-  const itemIndex = cartItems.findIndex(item => item.id === itemId);
-  if (itemIndex !== -1) {
-    cartItems.splice(itemIndex, 1);
-    renderCartItems();
-    calculateSubtotal();
-  }
-}
+// Function to handle the "Add to Cart" button click event
+function handleAddToCart(event) {
+  const productId = event.target.dataset.productid;
+  const productName = event.target.dataset.productname;
+  const productPrice = event.target.dataset.productprice;
+  const productImage = event.target.dataset.productimage;
 
-// Function to update the quantity of a cart item
-function updateCartItemQuantity(itemId, newQuantity) {
-  const item = cartItems.find(item => item.id === itemId);
-  if (item) {
-    item.quantity = parseInt(newQuantity, 10);
-    calculateSubtotal();
-  }
-}
-
-// Function to add a new item to the cart
-function addToCart(event) {
-  // Prevent the default form submission or button click behavior
-  event.preventDefault();
-
-  // Extract the product details
-  const productId = event.target.dataset.productId;
-  const productName = event.target.dataset.productName;
-  const productPrice = event.target.dataset.productPrice;
-  // ... extract other relevant details
-
-  // Create a new item object
+  // Create a new cart item object
   const newItem = {
     id: productId,
     name: productName,
-    price: productPrice,
-    quantity: 1 // Set initial quantity to 1
-    // ... add other relevant properties
+    price: parseFloat(productPrice.replace(',', '')),
+    image: productImage,
+    quantity: 1
   };
 
-  // Add the item to the cart
-  addItemToCart(newItem);
-}
-
-// Function to add a new item to the cart
-function addItemToCart(item) {
-  // Check if the item already exists in the cart
-  const existingItem = cartItems.find(cartItem => cartItem.id === item.id);
-
-  if (existingItem) {
-    // If the item already exists, increment the quantity
-    existingItem.quantity += 1;
+  // Check if the product is already in the cart
+  const existingItemIndex = cartItems.findIndex(item => item.id === productId);
+  if (existingItemIndex !== -1) {
+    // If the product is already in the cart, increase the quantity
+    cartItems[existingItemIndex].quantity++;
   } else {
-    // Otherwise, add the item to the cart
-    cartItems.push(item);
+    // Otherwise, add the product to the cart
+    cartItems.push(newItem);
   }
 
-  renderCartItems();
+  // Save the updated cart items to localStorage
+  localStorage.setItem('cartItems', JSON.stringify(cartItems));
+
+  // Call the displayCartItems function to update the cart page
+  displayCartItems();
+
+  // Call the calculateSubtotal function to update the subtotal price
   calculateSubtotal();
+
+  // Redirect to the cart page
+  window.location.assign('cart.html');
+
+
+  // Provide feedback to the user (you can modify this as needed)
+  alert('Product added to cart!');
 }
 
-// Add event listener for the checkout button
-const checkoutBtn = document.getElementById('checkout-btn');
-checkoutBtn.addEventListener('click', () => {
-  // Handle checkout logic here
-  console.log('Proceeding to checkout...');
+// Attach the event listener to the "Add to Cart" buttons
+const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
+addToCartButtons.forEach(button => {
+  button.addEventListener('click', handleAddToCart);
 });
 
-// Render initial cart items and subtotal
-renderCartItems();
-calculateSubtotal();
+// Call the displayCartItems function to populate the cart page on page load
+displayCartItems();
 
-// Add event listener to the "Add to Cart" button
-const addToCartBtn = document.getElementById('add-to-cart-btn');
-addToCartBtn.addEventListener('click', addToCart);
+// Call the calculateSubtotal function to calculate and display the subtotal price on page load
+calculateSubtotal();
